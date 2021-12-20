@@ -1,0 +1,17 @@
+- Raw Mode
+  1. salir del modo si es necesario, Ctrl-B = "\x02"
+  2. ctrl-C varias veces = "\x03"
+  3. enviar Ctrl-A = "\x01" raw mode
+  4. deberia esperar "raw REPL; CTRL-B to exit\r\n>"
+  5. soft reset (es necesario?) Ctrl-D = "\x04"
+  6. deberia esperar "soft reboot\r\n"
+
+- Salir de Raw Mode
+  1. Ctrl-B = "\x02"
+
+
+- Enviar comandos
+  1. enter raw mode
+  2. send command bytes
+  3. send Ctrl-D to evaluate
+  4. exit raw mode
