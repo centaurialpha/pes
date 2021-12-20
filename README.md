@@ -16,11 +16,11 @@ pip install -e ".[dev]"
 
 ### Running
 ```
-pes
+pes -d
 ```
 
 or
 
 ```
-python -m pes
+python -m pes -d
 ```
