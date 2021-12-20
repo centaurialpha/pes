@@ -8,6 +8,7 @@ from PyQt5.QtGui import (
     QFont,
 )
 
+from pes import resources
 from pes import __version__
 from pes import theme
 from pes.main_window import IDE
