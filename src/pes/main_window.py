@@ -29,7 +29,7 @@ class IDE(QMainWindow):
         self.statusBar().show()
 
         # FEO
-        self.main_panel.editor_widget.editor.cursorPositionChanged.connect(self.status_bar.update_line_col)
+        # self.main_panel.editor_widget.editor.cursorPositionChanged.connect(self.status_bar.update_line_col)
 
     def closeEvent(self, event):
         super().closeEvent(event)

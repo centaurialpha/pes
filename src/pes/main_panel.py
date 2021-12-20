@@ -6,6 +6,7 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QTabWidget,
     QTreeView,
+    QLabel,
     qApp
 )
 from PyQt5.QtCore import (
@@ -24,14 +25,28 @@ class EditorTab(QTabWidget):
         self.setTabsClosable(True)
         self.setMovable(True)
 
+        # Corner widget
+        self.line_col_text = "Lin: {}, Col: {}"
+        self.line_col_label = QLabel(self.line_col_text)
+        self.setCornerWidget(self.line_col_label)
+
+    def update_line_col(self, line: int, col: int):
+        self.line_col_label.setText(self.line_col_text.format(line, col))
+
 
 class EditorWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         vbox = QVBoxLayout(self)
-        self.editor = Editor()
-        vbox.addWidget(self.editor)
-        self.editor.setFocus()
+        self.editor_tab = EditorTab()
+        vbox.addWidget(self.editor_tab)
+
+    def add_editor(self):
+        ed = Editor()
+        ed.cursorPositionChanged.connect(self.editor_tab.update_line_col)
+        index = self.editor_tab.addTab(ed, "untitled")
+        self.editor_tab.setCurrentIndex(index)
+        ed.setFocus()
 
 
 class REPLWidget(QWidget):
@@ -73,4 +88,5 @@ class MainPanel(QSplitter):
         height = geo.height()
         self.setSizes([int(width * 0.20), int(width * 0.80)])
         self._vsplitter.setSizes([int(height * 0.80), int(height * 0.20)])
-        self.editor_widget.editor.setFocus()
+        # self.editor_widget.editor.setFocus()
+        self.editor_widget.add_editor()

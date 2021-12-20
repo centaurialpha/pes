@@ -141,16 +141,12 @@ class StatusBar(QFrame):
         settings_btn.setFocusPolicy(Qt.NoFocus)
         settings_btn.setText('\uf013')
 
-        self.line_col_text = "Lin: {}, Col: {}"
-        self.line_col_label = QLabel(self.line_col_text)
-
         dark_mode_btn = QToolButton()
         dark_mode_btn.setAutoRaise(True)
         dark_mode_btn.setFocusPolicy(Qt.NoFocus)
         dark_mode_btn.setCheckable(True)
         dark_mode_btn.setText('\uf186')
         mid_layout.addWidget(settings_btn)
-        mid_layout.addWidget(self.line_col_label)
         mid_layout.addWidget(dark_mode_btn)
 
         # Right Widgets
@@ -182,8 +178,6 @@ class StatusBar(QFrame):
 
         layout.setContentsMargins(2, 0, 2, 0)
 
-    def update_line_col(self, line: int, col: int):
-        self.line_col_label.setText(self.line_col_text.format(line, col))
         # from pes import esp
         # current_state = self.sender().state
         # self.sender().change_state()
