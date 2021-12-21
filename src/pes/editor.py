@@ -70,9 +70,22 @@ class Editor(QsciScintilla):
         self.setMarginsForegroundColor(QColor("#aaaaaa"))
         self.setCaretWidth(3)
         self.setCaretForegroundColor(QColor("#ffffff"))
+        # Brace matching
+        self.setBraceMatching(QsciScintilla.SloppyBraceMatch)
+        self.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, 4, QsciScintilla.INDIC_STRAIGHTBOX)
+        self.SendScintilla(QsciScintilla.SCI_INDICSETSTYLE, 5, QsciScintilla.INDIC_STRAIGHTBOX)
+        self.setMatchedBraceIndicator(4)
+        self.setUnmatchedBraceIndicator(5)
+        for ind in (4, 5):
+            self.SendScintilla(QsciScintilla.SCI_INDICSETALPHA, ind, 50)
+            self.SendScintilla(QsciScintilla.SCI_INDICSETOUTLINEALPHA, ind, 100)
+        self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, 4, QColor("#50fa7b"))
+        self.SendScintilla(QsciScintilla.SCI_INDICSETFORE, 5, QColor("#ff5555"))
 
         self.SendScintilla(QsciScintilla.SCI_SETHSCROLLBAR, 0)
 
+        # Folding
+        # TODO folding
         self.apply_theme()
         self._update_sidebar()
 

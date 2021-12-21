@@ -28,8 +28,18 @@ class IDE(QMainWindow):
         self.statusBar().setSizeGripEnabled(False)
         self.statusBar().show()
 
+        self.load_menu()
+
         # FEO
         # self.main_panel.editor_widget.editor.cursorPositionChanged.connect(self.status_bar.update_line_col)
+
+    def load_menu(self):
+        menubar = self.menuBar()
+        menu_file = menubar.addMenu("&File")
+        new_file_act = menu_file.addAction("New File")
+        menu_edit = menubar.addMenu("&Edit")
+        menu_help = menubar.addMenu("&Help")
+
 
     def closeEvent(self, event):
         super().closeEvent(event)
