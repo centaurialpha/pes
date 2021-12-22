@@ -9,16 +9,16 @@ from PyQt5.QtWidgets import (
     QVBoxLayout,
     QLabel,
     QToolButton,
+    QPushButton,
     QMainWindow,
     QComboBox,
     QDialogButtonBox,
-    qApp,
+    QSizePolicy,
 )
 from PyQt5.QtCore import (
     Qt,
     pyqtSignal,
     pyqtSlot,
-    QPoint,
 )
 from PyQt5.QtSerialPort import QSerialPortInfo
 
@@ -31,29 +31,44 @@ class Port:
     location: str
     vid: str
     pid: str
+    manufacturer: str = "N/A"
 
 
 class PortListWidget(QDialog):
     connected = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setMinimumSize(400, 200)
         self.ports = []
         self.setModal(True)
         vbox = QVBoxLayout(self)
+        hbox = QHBoxLayout()
+        hbox.setContentsMargins(0, 0, 0, 0)
         self.combo_box_ports = QComboBox()
-        vbox.addWidget(self.combo_box_ports)
+        self.combo_box_ports.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        refresh_btn = QPushButton("\uf002")
         self.port_info_label = QLabel("")
-        vbox.addWidget(self.port_info_label)
 
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_connect = button_box.button(QDialogButtonBox.Ok)
+        button_connect.setText("Connect")
+
         button_box.rejected.connect(self.reject)
         button_box.accepted.connect(self.accept)
         self.combo_box_ports.currentIndexChanged.connect(self._on_combo_box_changed)
+        refresh_btn.clicked.connect(self.refresh_ports)
 
+        hbox.addWidget(self.combo_box_ports)
+        hbox.addWidget(refresh_btn)
+        vbox.addLayout(hbox)
+        vbox.addWidget(self.port_info_label)
         vbox.addWidget(button_box)
 
     @pyqtSlot(int)
     def _on_combo_box_changed(self, index):
+        if not self.ports:
+            return
         port = self.ports[index]
         self.update_info(port)
 
@@ -62,20 +77,27 @@ class PortListWidget(QDialog):
 
     def showEvent(self, event):
         super().showEvent(event)
+        self.refresh_ports()
+        self.combo_box_ports.setCurrentIndex(0)
+
+    def refresh_ports(self):
         self.ports.clear()
+        self.combo_box_ports.clear()
         available_ports = QSerialPortInfo.availablePorts()
+        if not available_ports:
+            self.port_info_label.setText("-")
         for port in available_ports:
             port_obj = Port(
                 name=port.portName(),
                 location=port.systemLocation(),
                 vid=port.vendorIdentifier(),
-                pid=port.productIdentifier()
+                pid=port.productIdentifier(),
+                manufacturer=port.manufacturer()
             )
             self.ports.append(port_obj)
 
         for port in self.ports:
             self.combo_box_ports.addItem(port.location)
-        self.combo_box_ports.setCurrentIndex(0)
 
     def update_info(self, port):
         port_info_text = (
@@ -83,6 +105,7 @@ class PortListWidget(QDialog):
             f"<b>Location:</b> {port.location}<br>"
             f"<b>VID:</b> {port.vid}<br>"
             f"<b>PID:</b> {port.pid}<br>"
+            f"<b>Manufacturer:</b> {port.manufacturer}"
         )
         self.port_info_label.setText(port_info_text)
 

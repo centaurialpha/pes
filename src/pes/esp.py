@@ -1,4 +1,3 @@
-import time
 import sys
 import serial
 
@@ -7,7 +6,6 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtSerialPort import (
     QSerialPort,
-    QSerialPortInfo,
 )
 
 
@@ -54,6 +52,7 @@ def enter_raw_mode(ser):
     ser.write(b"\r\x01")
 
     data = ser.read_until(b"raw REPL; CTRL-B to exit\r\n>")
+    print(data)
     # print(f" [debug]{data.decode()}")
 
     # ser.write(b"\x04")

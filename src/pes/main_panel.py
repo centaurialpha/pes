@@ -4,95 +4,59 @@ from PyQt5.QtWidgets import (
     QWidget,
     QSplitter,
     QVBoxLayout,
-    QTabWidget,
     QTreeView,
-    QLabel,
+    QFileSystemModel,
     qApp
 )
 from PyQt5.QtCore import (
     Qt,
-    pyqtSlot,
 )
 
-from pes.editor import Editor
+from pes.editor import (
+    REPL,
+    EditorWidget,
+)
 from pes.device import ESP
+from pes.control import Control
+from pes.filesystem import ROOT_DIR
 
 logger = logging.getLogger(__name__)
-
-
-class EditorTab(QTabWidget):
-    def __init__(self):
-        super().__init__()
-        self.setTabsClosable(True)
-        self.setMovable(True)
-
-        # Corner widget
-        self.line_col_text = "Lin: {}, Col: {}"
-        self.line_col_label = QLabel(self.line_col_text)
-        self.setCornerWidget(self.line_col_label)
-
-    @property
-    def current_editor(self) -> Editor:
-        return self.currentWidget()
-
-    @property
-    def current_index(self) -> int:
-        return self.currentIndex()
-
-    @property
-    def current_text(self) -> str:
-        return self.tabText(self.current_index)
-
-    @current_text.setter
-    def current_text(self, text):
-        self.setTabText(self.current_index, text)
-
-    def update_line_col(self, line: int, col: int):
-        self.line_col_label.setText(self.line_col_text.format(line + 1, col))
-
-
-class EditorWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        vbox = QVBoxLayout(self)
-        self.editor_tab = EditorTab()
-        vbox.addWidget(self.editor_tab)
-
-    def add_editor(self, title):
-        ed = Editor()
-        ed.filename = title
-        # Connect signals
-        ed.cursorPositionChanged.connect(self.editor_tab.update_line_col)
-        ed.modificationChanged.connect(self.on_modification_changed)
-
-        index = self.editor_tab.addTab(ed, title)
-        self.editor_tab.setCurrentIndex(index)
-        ed.setFocus()
-
-    @pyqtSlot(bool)
-    def on_modification_changed(self, modified):
-        title = self.editor_tab.current_text
-        if modified:
-            title = f"{title} •"
-        else:
-            title = self.editor_tab.current_editor.filename
-        self.editor_tab.current_text = title
 
 
 class REPLWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.repl = REPL()
+        self.ctrl = Control()
+        self.ctrl.dataEmited.connect(self.process_data)
         vbox = QVBoxLayout(self)
-        self.editor = Editor()
-        vbox.addWidget(self.editor)
+        vbox.addWidget(self.repl)
+
+    def process_data(self, data):
+        data = data.decode()
+        self.repl.append(data)
 
 
 class FileBrowserWidget(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         vbox = QVBoxLayout(self)
+        self.filesystemm = QFileSystemModel()
         self.view = QTreeView()
+        self.view.setModel(self.filesystemm)
+        for i in range(1, 4):
+            self.view.hideColumn(i)
         vbox.addWidget(self.view)
+
+    def populate(self):
+        self.filesystemm.setRootPath(ROOT_DIR)
+        self.view.setRootIndex(self.filesystemm.index(ROOT_DIR))
+
+    def populate2(self):
+        import pathlib
+        p = pathlib.Path(ROOT_DIR)
+        f = p / "oootro.py"
+        f.write_text("")
 
 
 class MainPanel(QSplitter):
@@ -101,15 +65,21 @@ class MainPanel(QSplitter):
         self.esp = ESP()
         self.editor_widget = EditorWidget()
         self.repl_widget = REPLWidget()
-        self.repl_widget.hide()
+        # self.repl_widget.hide()
         self.file_browser_widget = FileBrowserWidget()
 
         self._vsplitter = QSplitter(orientation=Qt.Vertical)
         self._vsplitter.addWidget(self.editor_widget)
-        # self._vsplitter.addWidget(self.repl_widget)
+        self._vsplitter.addWidget(self.repl_widget)
 
         self.addWidget(self.file_browser_widget)
         self.addWidget(self._vsplitter)
+
+    def new_tab(self, path):
+        self.editor_widget.add_editor(path)
+
+    def close_tab(self):
+        self.editor_widget.editor_tab.removeTab(self.editor_widget.editor_tab.current_index)
 
     def showEvent(self, event):
         super().showEvent(event)
@@ -119,4 +89,3 @@ class MainPanel(QSplitter):
         self.setSizes([int(width * 0.20), int(width * 0.80)])
         self._vsplitter.setSizes([int(height * 0.80), int(height * 0.20)])
         # self.editor_widget.editor.setFocus()
-        self.editor_widget.add_editor("hola")

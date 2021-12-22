@@ -1,26 +1,26 @@
+import os
 import builtins
 import keyword
 
+from PyQt5.QtWidgets import (
+    QLabel,
+    QTabWidget,
+    QMessageBox,
+    QWidget,
+    QVBoxLayout,
+)
 from PyQt5.QtGui import (
-    QFont,
     QColor,
-    QFontMetrics,
-    QPainter,
 )
 from PyQt5.Qsci import (
     QsciScintilla,
     QsciLexerPython,
 )
+from PyQt5.QtCore import (
+    pyqtSlot,
+)
 
 from pes.theme import DarkTheme
-
-"""
-KEYWORDS defined in QsciPythonLexer
-
-and as assert break class continue def del elif else except exec
-finally for from global if import in is lambda None not or pass
-print raise return try while with yield
-"""
 
 
 class PythonLexer(QsciLexerPython):
@@ -46,11 +46,33 @@ class PythonLexer(QsciLexerPython):
         return " ".join(keywords)
 
 
-class Editor(QsciScintilla):
+class BaseEditor(QsciScintilla):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.lexer = PythonLexer()
         self.setLexer(self.lexer)
+
+    def apply_theme(self, theme=DarkTheme):
+        theme.apply(self.lexer)
+
+
+class REPL(BaseEditor):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setMargins(0)
+        self.SendScintilla(QsciScintilla.SCI_SETHSCROLLBAR, 0)
+
+        self.apply_theme()
+
+    def keyPressEvent(self, event):
+        print(event.text())
+        super().keyPressEvent(event)
+
+
+class Editor(BaseEditor):
+    def __init__(self, path=None, parent=None):
+        super().__init__(parent)
+        self.path = path
         self.setModified(False)
         self.configure()
 
@@ -92,12 +114,108 @@ class Editor(QsciScintilla):
         self._test()
 
     def _test(self):
-        code = (
-            "import time\nfrom machine import Pin\n\nled = Pin(2, Pin.OUT)\n"
-            "while True:\n    led.off()\n    time.sleep_ms(500)\n"
-            "    led.on()\n    time.sleep_ms(500)"
-        )
-        self.setText(code)
+        if self.path is None:
+            code = (
+                "import time\nfrom machine import Pin\n\nled = Pin(2, Pin.OUT)\n"
+                "while True:\n    led.off()\n    time.sleep_ms(500)\n"
+                "    led.on()\n    time.sleep_ms(500)"
+            )
+            self.setText(code)
 
     def apply_theme(self, theme=DarkTheme):
         theme.apply(self.lexer)
+
+    @property
+    def display_text(self) -> str:
+        text = "untitled"
+        if self.path is not None:
+            text = os.path.basename(self.path)
+        return text
+
+    @property
+    def modified(self) -> bool:
+        return self.isModified()
+
+
+class EditorTab(QTabWidget):
+    def __init__(self):
+        super().__init__()
+        self.setTabsClosable(True)
+        self.setMovable(True)
+
+        # Corner widget
+        self.line_col_text = "Lin: {}, Col: {}"
+        self.line_col_label = QLabel(self.line_col_text)
+        self.setCornerWidget(self.line_col_label)
+        self.tabCloseRequested.connect(self.removeTab)
+
+    @property
+    def current_editor(self) -> Editor:
+        return self.currentWidget()
+
+    @property
+    def current_index(self) -> int:
+        return self.currentIndex()
+
+    @property
+    def display_text(self) -> str:
+        return self.current_editor.display_text
+
+    @property
+    def current_text(self) -> str:
+        return self.tabText(self.current_index)
+
+    @current_text.setter
+    def current_text(self, text):
+        self.setTabText(self.current_index, text)
+
+    def removeTab(self, index):
+        if self.current_editor.modified:
+            ret = QMessageBox.question(
+                self,
+                "jeje",
+                f"jejejeje {self.current_editor.display_text}",
+                QMessageBox.Save | QMessageBox.Cancel
+            )
+            print(ret)
+            print("SI")
+        else:
+            print("NO")
+        super().removeTab(index)
+
+    def update_line_col(self, line: int, col: int):
+        self.line_col_label.setText(self.line_col_text.format(line + 1, col))
+
+
+class EditorWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        vbox = QVBoxLayout(self)
+        self.editor_tab = EditorTab()
+        vbox.addWidget(self.editor_tab)
+
+    def add_editor(self, path):
+        ed = Editor(path)
+        # FIXME: feo feo
+        # hacer función que lea en binario y decodifique
+        if path is not None:
+            with open(path) as fp:
+                text = fp.read()
+            ed.setText(text)
+        # Connect signals
+        ed.cursorPositionChanged.connect(self.editor_tab.update_line_col)
+        ed.modificationChanged.connect(self.on_modification_changed)
+
+        index = self.editor_tab.addTab(ed, ed.display_text)
+        self.editor_tab.setTabToolTip(index, ed.path)
+        self.editor_tab.setCurrentIndex(index)
+        ed.setFocus()
+
+    @pyqtSlot(bool)
+    def on_modification_changed(self, modified):
+        title = self.editor_tab.current_text
+        if modified:
+            title = f"{title} •"
+        else:
+            title = self.editor_tab.display_text
+        self.editor_tab.current_text = title

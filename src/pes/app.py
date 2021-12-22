@@ -8,9 +8,10 @@ from PyQt5.QtGui import (
     QFont,
 )
 
-from pes import resources
+from pes import resources  # noqa
 from pes import __version__
 from pes import theme
+from pes import filesystem
 from pes.main_window import IDE
 
 logger = logging.getLogger("pes")
@@ -51,9 +52,12 @@ def start():
     args = get_cli().parse_args()
     setup_logger(args.loglevel)
     logger.info("Starting PES %s", __version__)
+    filesystem.create_dirs()
 
     app = QApplication(sys.argv)
     app.setApplicationName("pes")
+    app.setApplicationDisplayName("pes")
+    app.setApplicationVersion(__version__)
 
     # Add Font Awesome
     font_family = QFontDatabase.applicationFontFamilies(

@@ -16,6 +16,7 @@ from PyQt5.QtCore import (
 
 class StateWidget(QWidget):
     clicked = pyqtSignal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.radius = 8

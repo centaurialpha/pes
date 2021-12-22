@@ -107,7 +107,6 @@ class Comm(QObject):
         self.send(Comm.CTRL_A)
         self.read_until("raw REPL; CTRL-B to exit \r\n>")
 
-
     def exit_raw_mode(self):
         self.send(Comm.CTRL_B)
 
